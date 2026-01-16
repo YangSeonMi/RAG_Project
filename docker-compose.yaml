@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # RAG 서버
+  rag_server:
+    build:
+      context: ./rag_server
+      dockerfile: Dockerfile
+    container_name: rag_server
+    ports:
+      - "7777:7777"
+    volumes:
+      - ./rag_server/chroma_data:/app/chroma_data
+    networks:
+      - rag-network
+    environment:
+      - PYTHONUNBUFFERED=1
+      - OLLAMA_URL=http://ollama:11434  # Ollama 컨테이너 이름으로 접근
+
+  # 백엔드 서버
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend
+    ports:
+      - "7001:7001"
+    depends_on:
+      - rag_server
+    networks:
+      - rag-network
+    environment:
+      - RAG_SERVER_URL=http://rag_server:7777
+      - PYTHONUNBUFFERED=1
+
+networks:
+  rag-network:
+    external: true  # 외부에 이미 존재하는 네트워크 사용
